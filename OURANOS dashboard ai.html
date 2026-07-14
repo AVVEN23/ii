@@ -1,0 +1,2799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="O.U.R.A.N.O.S – Optimized Unmanned Robotics & Aerial Network for Operational Safety – Interactive Drone Dashboard">
+  <title>O.U.R.A.N.O.S – Drone Control Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════ */
+:root {
+  /* Colors */
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #0f0f2e;
+  --bg-card: rgba(15, 15, 46, 0.6);
+  --bg-card-hover: rgba(25, 25, 66, 0.7);
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
+
+  --accent-purple: #8b5cf6;
+  --accent-purple-glow: rgba(139, 92, 246, 0.4);
+  --accent-cyan: #06d6a0;
+  --accent-cyan-glow: rgba(6, 214, 160, 0.3);
+  --accent-blue: #3b82f6;
+  --accent-blue-glow: rgba(59, 130, 246, 0.3);
+  --accent-pink: #ec4899;
+  --accent-pink-glow: rgba(236, 72, 153, 0.3);
+  --accent-orange: #f59e0b;
+  --accent-orange-glow: rgba(245, 158, 11, 0.3);
+  --accent-red: #ef4444;
+  --accent-red-glow: rgba(239, 68, 68, 0.3);
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Spacing */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --gap-xl: 32px;
+
+  /* Borders */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-glow-purple: 0 0 20px var(--accent-purple-glow);
+  --shadow-glow-cyan: 0 0 20px var(--accent-cyan-glow);
+}
+
+/* ═══════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Animated background gradient */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(6, 214, 160, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.04) 0%, transparent 60%);
+  z-index: 0;
+  animation: bgPulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes bgPulse {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════
+   GLASS CARD
+   ═══════════════════════════════════════ */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+
+.glass-card:hover {
+  border-color: rgba(255,255,255,0.12);
+  background: var(--bg-card-hover);
+}
+
+/* ═══════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════ */
+.header {
+  position: relative;
+  z-index: 10;
+  padding: var(--gap-md) var(--gap-xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(10, 10, 26, 0.8);
+  backdrop-filter: blur(20px);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+}
+
+.header-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', monospace;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: white;
+  box-shadow: var(--shadow-glow-purple);
+  animation: logoPulse 3s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 0 15px var(--accent-purple-glow); }
+  50% { box-shadow: 0 0 25px var(--accent-cyan-glow), 0 0 40px var(--accent-purple-glow); }
+}
+
+.header-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-subtitle {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-lg);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: statusBlink 2s ease-in-out infinite;
+}
+
+.status-dot.online { background: var(--accent-cyan); box-shadow: 0 0 8px var(--accent-cyan-glow); }
+.status-dot.warning { background: var(--accent-orange); box-shadow: 0 0 8px var(--accent-orange-glow); }
+
+@keyframes statusBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ═══════════════════════════════════════
+   MAIN LAYOUT
+   ═══════════════════════════════════════ */
+.dashboard {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr 300px;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--gap-md);
+  padding: var(--gap-md);
+  min-height: calc(100vh - 70px);
+}
+
+/* ═══════════════════════════════════════
+   SECTION TITLES
+   ═══════════════════════════════════════ */
+.section-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent-purple);
+  margin-bottom: var(--gap-md);
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+}
+
+.section-title .icon {
+  font-size: 1rem;
+}
+
+/* ═══════════════════════════════════════
+   LEFT PANEL – ATTACHMENT CONTROLS
+   ═══════════════════════════════════════ */
+.left-panel {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+  overflow-y: auto;
+  max-height: calc(100vh - 90px);
+  padding-right: var(--gap-sm);
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-purple) transparent;
+}
+
+.left-panel::-webkit-scrollbar { width: 4px; }
+.left-panel::-webkit-scrollbar-thumb { background: var(--accent-purple); border-radius: 4px; }
+
+.attachment-card {
+  padding: var(--gap-md);
+}
+
+.attachment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--gap-md);
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+}
+
+.attachment-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.attachment-icon.camera { background: rgba(139, 92, 246, 0.15); }
+.attachment-icon.lora { background: rgba(59, 130, 246, 0.15); }
+.attachment-icon.flight { background: rgba(6, 214, 160, 0.15); }
+.attachment-icon.pi { background: rgba(236, 72, 153, 0.15); }
+.attachment-icon.led { background: rgba(245, 158, 11, 0.15); }
+.attachment-icon.audio { background: rgba(239, 68, 68, 0.15); }
+.attachment-icon.banner { background: rgba(139, 92, 246, 0.15); }
+.attachment-icon.phone { background: rgba(6, 214, 160, 0.15); }
+
+.attachment-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.attachment-model {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.toggle-switch input { display: none; }
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-full);
+  transition: var(--transition-normal);
+  border: 1px solid var(--glass-border);
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  top: 2px;
+  left: 3px;
+  transition: var(--transition-normal);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--accent-purple);
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 12px var(--accent-purple-glow);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(19px);
+  background: white;
+}
+
+/* Control Items */
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+.control-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--gap-sm) 0;
+}
+
+.control-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.control-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Orbitron', monospace;
+  color: var(--accent-cyan);
+}
+
+/* Sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  outline: none;
+  margin: var(--gap-sm) 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--accent-purple-glow);
+  transition: var(--transition-fast);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 14px var(--accent-purple-glow);
+}
+
+/* Select Dropdown */
+.custom-select {
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.custom-select:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 8px var(--accent-purple-glow);
+}
+
+.custom-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Text Input */
+.text-input {
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.text-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan-glow);
+}
+
+/* Mini Buttons */
+.btn-mini {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.05);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-mini:hover {
+  background: var(--accent-purple);
+  color: white;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 10px var(--accent-purple-glow);
+}
+
+.btn-mini.active {
+  background: var(--accent-purple);
+  color: white;
+  border-color: var(--accent-purple);
+}
+
+.btn-group {
+  display: flex;
+  gap: var(--gap-xs);
+}
+
+/* Status Badge */
+.status-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+  background: rgba(6, 214, 160, 0.15);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(6, 214, 160, 0.3);
+}
+
+.status-badge.inactive {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+/* Color picker row */
+.color-row {
+  display: flex;
+  gap: var(--gap-xs);
+  margin-top: var(--gap-sm);
+}
+
+.color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: var(--transition-fast);
+}
+
+.color-dot:hover, .color-dot.selected {
+  border-color: white;
+  transform: scale(1.15);
+}
+
+/* ═══════════════════════════════════════
+   CENTER PANEL – DRONE VIEW
+   ═══════════════════════════════════════ */
+.center-panel {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+
+/* Drone Visualization */
+.drone-view-card {
+  padding: var(--gap-lg);
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.drone-view-card::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-purple-glow), transparent);
+  opacity: 0.15;
+  animation: droneGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes droneGlow {
+  0% { transform: scale(0.8); opacity: 0.1; }
+  100% { transform: scale(1.2); opacity: 0.2; }
+}
+
+.drone-container {
+  position: relative;
+  z-index: 2;
+  width: 280px;
+  height: 220px;
+}
+
+/* CSS Drone */
+.drone-body {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 50px;
+  background: linear-gradient(135deg, #2d2d5e, #1a1a3e);
+  border-radius: 25px;
+  border: 2px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 20px var(--accent-purple-glow), inset 0 0 10px rgba(139,92,246,0.1);
+  z-index: 3;
+}
+
+.drone-body::before {
+  content: 'O';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Orbitron', monospace;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--accent-purple);
+  text-shadow: 0 0 10px var(--accent-purple-glow);
+}
+
+/* Drone camera lens */
+.drone-camera {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1a1a3e, #0a0a1a);
+  border: 2px solid var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan-glow);
+  z-index: 4;
+  transition: var(--transition-normal);
+}
+
+.drone-camera.active {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 15px var(--accent-cyan-glow), 0 0 30px var(--accent-cyan-glow);
+  animation: cameraPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cameraPulse {
+  0%, 100% { box-shadow: 0 0 10px var(--accent-cyan-glow); }
+  50% { box-shadow: 0 0 20px var(--accent-cyan-glow), 0 0 40px rgba(6,214,160,0.15); }
+}
+
+/* Arms */
+.drone-arm {
+  position: absolute;
+  width: 100px;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(139,92,246,0.3), rgba(139,92,246,0.6));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  border-radius: 2px;
+}
+
+.drone-arm.top-left { left: -60px; top: 30%; transform: rotate(-25deg); transform-origin: right center; }
+.drone-arm.top-right { right: -60px; top: 30%; transform: rotate(25deg); transform-origin: left center; }
+.drone-arm.bottom-left { left: -60px; top: 70%; transform: rotate(25deg); transform-origin: right center; }
+.drone-arm.bottom-right { right: -60px; top: 70%; transform: rotate(-25deg); transform-origin: left center; }
+
+/* Propellers */
+.propeller-hub {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  box-shadow: 0 0 8px var(--accent-purple-glow);
+  z-index: 5;
+}
+
+.propeller-hub.tl { top: 12px; left: 18px; }
+.propeller-hub.tr { top: 12px; right: 18px; }
+.propeller-hub.bl { bottom: 12px; left: 18px; }
+.propeller-hub.br { bottom: 12px; right: 18px; }
+
+.propeller {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  z-index: 4;
+}
+
+.propeller.tl { top: -12px; left: -6px; }
+.propeller.tr { top: -12px; right: -6px; }
+.propeller.bl { bottom: -12px; left: -6px; }
+.propeller.br { bottom: -12px; right: -6px; }
+
+.propeller-blade {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  animation: spin 0.3s linear infinite;
+}
+
+.propeller-blade::before,
+.propeller-blade::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(139,92,246,0.8), transparent);
+  border-radius: 2px;
+}
+
+.propeller-blade::before { transform: translate(-50%, -50%); }
+.propeller-blade::after { transform: translate(-50%, -50%) rotate(90deg); }
+
+.propeller.cw .propeller-blade { animation-direction: normal; }
+.propeller.ccw .propeller-blade { animation-direction: reverse; }
+
+.drone-container.stopped .propeller-blade {
+  animation-play-state: paused !important;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Drone LED indicators */
+.drone-led {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  z-index: 5;
+}
+
+.drone-led.front-left { top: 8px; left: 22px; background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan); }
+.drone-led.front-right { top: 8px; right: 22px; background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan); }
+.drone-led.rear-left { bottom: 8px; left: 22px; background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
+.drone-led.rear-right { bottom: 8px; right: 22px; background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
+
+/* Drone labels */
+.drone-label {
+  position: absolute;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  opacity: 0.7;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.drone-label::before {
+  content: '';
+  position: absolute;
+  width: 1px;
+  background: rgba(139, 92, 246, 0.3);
+}
+
+/* Flight Mode Display */
+.flight-mode-display {
+  position: absolute;
+  bottom: var(--gap-md);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--gap-lg);
+  z-index: 5;
+}
+
+.flight-stat {
+  text-align: center;
+}
+
+.flight-stat-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+.flight-stat-label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ═══════════════════════════════════════
+   CAMERA FEED
+   ═══════════════════════════════════════ */
+.camera-feed-card {
+  padding: var(--gap-md);
+}
+
+.camera-feed-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--glass-border);
+}
+
+.camera-feed-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Scanline effect */
+.camera-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+.camera-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.camera-hud-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--accent-cyan);
+  border-style: solid;
+  border-width: 0;
+}
+
+.camera-hud-corner.tl { top: 8px; left: 8px; border-top-width: 2px; border-left-width: 2px; }
+.camera-hud-corner.tr { top: 8px; right: 8px; border-top-width: 2px; border-right-width: 2px; }
+.camera-hud-corner.bl { bottom: 8px; left: 8px; border-bottom-width: 2px; border-left-width: 2px; }
+.camera-hud-corner.br { bottom: 8px; right: 8px; border-bottom-width: 2px; border-right-width: 2px; }
+
+.camera-hud-text {
+  position: absolute;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.55rem;
+  color: var(--accent-cyan);
+  opacity: 0.7;
+}
+
+.camera-hud-text.top-label { top: 10px; left: 50%; transform: translateX(-50%); }
+.camera-hud-text.bottom-label { bottom: 10px; left: 36px; }
+.camera-hud-text.rec { top: 10px; right: 36px; color: var(--accent-red); animation: recBlink 1s step-end infinite; }
+
+@keyframes recBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.camera-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0a0a1a, #0f0f2e);
+  color: var(--text-muted);
+  gap: var(--gap-sm);
+}
+
+.camera-placeholder-icon {
+  font-size: 2.5rem;
+  opacity: 0.4;
+}
+
+.camera-placeholder-text {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--gap-sm);
+  padding-top: var(--gap-sm);
+  border-top: 1px solid var(--glass-border);
+}
+
+.camera-source-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.camera-btn {
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-purple);
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--accent-purple);
+  font-size: 0.7rem;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.camera-btn:hover {
+  background: var(--accent-purple);
+  color: white;
+}
+
+.camera-btn.active {
+  background: var(--accent-purple);
+  color: white;
+  box-shadow: 0 0 10px var(--accent-purple-glow);
+}
+
+/* ═══════════════════════════════════════
+   RIGHT PANEL – TELEMETRY
+   ═══════════════════════════════════════ */
+.right-panel {
+  grid-column: 3;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+  overflow-y: auto;
+  max-height: calc(100vh - 90px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-cyan) transparent;
+}
+
+.telemetry-card {
+  padding: var(--gap-md);
+}
+
+/* Gauges */
+.gauge-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-md);
+}
+
+.gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+}
+
+.gauge-ring {
+  position: relative;
+  width: 70px;
+  height: 70px;
+}
+
+.gauge-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.gauge-ring .gauge-bg {
+  fill: none;
+  stroke: rgba(255,255,255,0.05);
+  stroke-width: 4;
+}
+
+.gauge-ring .gauge-fill {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease;
+}
+
+.gauge-ring .gauge-fill.purple { stroke: var(--accent-purple); filter: drop-shadow(0 0 4px var(--accent-purple-glow)); }
+.gauge-ring .gauge-fill.cyan { stroke: var(--accent-cyan); filter: drop-shadow(0 0 4px var(--accent-cyan-glow)); }
+.gauge-ring .gauge-fill.blue { stroke: var(--accent-blue); filter: drop-shadow(0 0 4px var(--accent-blue-glow)); }
+.gauge-ring .gauge-fill.orange { stroke: var(--accent-orange); filter: drop-shadow(0 0 4px var(--accent-orange-glow)); }
+.gauge-ring .gauge-fill.pink { stroke: var(--accent-pink); filter: drop-shadow(0 0 4px var(--accent-pink-glow)); }
+
+.gauge-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.gauge-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Signal Bars */
+.signal-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+}
+
+.signal-bar {
+  width: 4px;
+  border-radius: 1px;
+  background: rgba(255,255,255,0.1);
+  transition: var(--transition-normal);
+}
+
+.signal-bar.active {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 4px var(--accent-cyan-glow);
+}
+
+/* GPS Card */
+.gps-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+.gps-coord {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.gps-coord-label { color: var(--text-muted); }
+.gps-coord-value { font-family: 'Orbitron', monospace; color: var(--accent-cyan); font-size: 0.7rem; }
+
+/* ═══════════════════════════════════════
+   BOTTOM PANELS
+   ═══════════════════════════════════════ */
+.bottom-panel {
+  grid-column: 2;
+  grid-row: 2 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+
+/* Mode Tabs */
+.mode-tabs {
+  display: flex;
+  gap: var(--gap-xs);
+  padding: 4px;
+  background: rgba(255,255,255,0.03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-align: center;
+}
+
+.mode-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.05);
+}
+
+.mode-tab.active {
+  background: var(--accent-purple);
+  color: white;
+  box-shadow: 0 0 12px var(--accent-purple-glow);
+}
+
+/* Mode Content */
+.mode-content {
+  display: none;
+  padding: var(--gap-md);
+}
+
+.mode-content.active {
+  display: block;
+}
+
+/* Waste Management Grid */
+.waste-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--gap-md);
+}
+
+.bin-card {
+  padding: var(--gap-sm);
+  text-align: center;
+  background: rgba(255,255,255,0.02);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+}
+
+.bin-icon { font-size: 1.5rem; margin-bottom: var(--gap-xs); }
+.bin-id { font-size: 0.7rem; color: var(--text-muted); margin-bottom: var(--gap-sm); }
+
+.bin-fill-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: var(--gap-xs);
+}
+
+.bin-fill-level {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+
+.bin-fill-level.low { background: var(--accent-cyan); }
+.bin-fill-level.medium { background: var(--accent-orange); }
+.bin-fill-level.high { background: var(--accent-red); }
+
+.bin-percent {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* City map */
+.city-map {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #0a0a1a, #0f1629);
+  border: 1px solid var(--glass-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.map-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(139,92,246,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,92,246,0.05) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.map-road {
+  position: absolute;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.map-road.horizontal { height: 3px; width: 100%; }
+.map-road.vertical { width: 3px; height: 100%; }
+
+.map-marker {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  z-index: 2;
+  transition: var(--transition-normal);
+}
+
+.map-marker.drone {
+  background: var(--accent-purple);
+  box-shadow: 0 0 12px var(--accent-purple-glow);
+  animation: droneFly 6s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes droneFly {
+  0% { top: 30%; left: 20%; }
+  25% { top: 50%; left: 60%; }
+  50% { top: 20%; left: 80%; }
+  75% { top: 70%; left: 40%; }
+  100% { top: 30%; left: 20%; }
+}
+
+.map-marker.bin { background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan-glow); }
+.map-marker.bin.full { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red-glow); animation: binAlert 1s ease-in-out infinite; }
+
+@keyframes binAlert {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
+.map-marker.traffic { background: var(--accent-orange); box-shadow: 0 0 6px var(--accent-orange-glow); }
+
+.map-legend {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 5;
+  background: rgba(0,0,0,0.6);
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+}
+
+.map-legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Heatmap for crowd */
+.heatmap-cell {
+  border-radius: 4px;
+  transition: background 0.5s ease;
+}
+
+.crowd-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 2px;
+  height: 200px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+/* LED message preview */
+.led-preview {
+  width: 100%;
+  padding: var(--gap-md);
+  background: #000;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  text-align: center;
+  font-family: 'Orbitron', monospace;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-shadow: 0 0 10px var(--accent-cyan-glow);
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.led-preview .scrolling-text {
+  white-space: nowrap;
+  animation: ledScroll 8s linear infinite;
+}
+
+@keyframes ledScroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Smart Advertising */
+.ad-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+
+/* Alerts / Notifications */
+.alerts-panel {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  padding: var(--gap-sm) var(--gap-md);
+  background: rgba(255,255,255,0.02);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid;
+  font-size: 0.72rem;
+  animation: alertSlide 0.3s ease-out;
+}
+
+@keyframes alertSlide {
+  from { transform: translateX(-10px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.alert-item.info { border-color: var(--accent-blue); }
+.alert-item.warning { border-color: var(--accent-orange); }
+.alert-item.critical { border-color: var(--accent-red); }
+.alert-item.success { border-color: var(--accent-cyan); }
+
+.alert-time {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  min-width: 45px;
+}
+
+/* ═══════════════════════════════════════
+   RASPBERRY PI INTEGRATION PANEL
+   ═══════════════════════════════════════ */
+.pi-integration-card {
+  padding: var(--gap-md);
+  border: 1px solid rgba(6, 214, 160, 0.2);
+}
+
+.pi-integration-card .section-title {
+  color: var(--accent-cyan);
+}
+
+.pi-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-lg);
+  padding: var(--gap-md);
+  flex-wrap: wrap;
+}
+
+.pi-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+  padding: var(--gap-sm) var(--gap-md);
+  background: rgba(255,255,255,0.03);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  font-size: 0.72rem;
+  min-width: 80px;
+  text-align: center;
+  transition: var(--transition-normal);
+}
+
+.pi-node.active {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan-glow);
+}
+
+.pi-node-icon { font-size: 1.5rem; }
+.pi-node-label { font-weight: 600; }
+.pi-node-detail { font-size: 0.6rem; color: var(--text-muted); }
+
+.pi-arrow {
+  font-size: 1.2rem;
+  color: var(--accent-cyan);
+  animation: arrowPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes arrowPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.pi-connection-status {
+  text-align: center;
+  padding: var(--gap-sm);
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  margin-top: var(--gap-sm);
+}
+
+.pi-connection-status.connected {
+  background: rgba(6, 214, 160, 0.1);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(6, 214, 160, 0.2);
+}
+
+.pi-connection-status.disconnected {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--accent-orange);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════ */
+@media (max-width: 1200px) {
+  .dashboard {
+    grid-template-columns: 280px 1fr 260px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .left-panel, .right-panel {
+    max-height: none;
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .center-panel, .bottom-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  html { font-size: 13px; }
+
+  .header {
+    flex-direction: column;
+    gap: var(--gap-sm);
+    text-align: center;
+  }
+
+  .header-status { flex-wrap: wrap; justify-content: center; }
+
+  .gauge-grid { grid-template-columns: 1fr 1fr; }
+
+  .drone-container { transform: scale(0.8); }
+}
+
+/* ═══════════════════════════════════════
+   UTILITY ANIMATIONS
+   ═══════════════════════════════════════ */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Floating particles (background decoration) */
+.particle {
+  position: fixed;
+  width: 2px;
+  height: 2px;
+  background: var(--accent-purple);
+  border-radius: 50%;
+  opacity: 0.3;
+  z-index: 0;
+  pointer-events: none;
+  animation: floatUp linear infinite;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════
+   AI VISION ENGINE
+   ═══════════════════════════════════════ */
+.ai-settings-card { border:1px solid rgba(139,92,246,.3)!important; }
+.ai-results-card  { border:1px solid rgba(6,214,160,.2)!important;  }
+
+.ai-status-badge {
+  padding:3px 10px; border-radius:var(--radius-full);
+  font-family:'Orbitron',monospace; font-size:.58rem;
+  font-weight:700; letter-spacing:1px;
+}
+.ai-badge-offline  { background:rgba(100,116,139,.15); color:var(--text-muted);    border:1px solid rgba(100,116,139,.3); }
+.ai-badge-ready    { background:rgba(6,214,160,.15);   color:var(--accent-cyan);   border:1px solid rgba(6,214,160,.3); }
+.ai-badge-scanning { background:rgba(139,92,246,.15);  color:var(--accent-purple); border:1px solid rgba(139,92,246,.3); animation:statusBlink .8s ease-in-out infinite; }
+.ai-badge-error    { background:rgba(239,68,68,.15);   color:var(--accent-red);    border:1px solid rgba(239,68,68,.3); }
+
+.ai-placeholder { display:flex;flex-direction:column;align-items:center;gap:var(--gap-sm);padding:var(--gap-lg) var(--gap-md);text-align:center; }
+
+.ai-condition-row { display:flex;justify-content:space-between;align-items:center;padding:4px 0; }
+.ai-bar-wrap { width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin:3px 0; }
+.ai-bar      { height:100%;border-radius:2px;transition:width 1s ease; }
+
+.ai-alert-banner {
+  background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:var(--accent-red);
+  padding:6px;border-radius:var(--radius-sm);font-size:.68rem;font-weight:700;
+  text-align:center;margin-top:var(--gap-sm);animation:statusBlink 1s ease-in-out infinite;
+}
+.ai-section-label {
+  font-family:'Orbitron',monospace;font-size:.58rem;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--accent-purple);
+  margin:var(--gap-sm) 0 4px;
+}
+.ai-crack-item {
+  background:rgba(255,255,255,.02);border-radius:var(--radius-sm);
+  padding:8px;margin-bottom:6px;border-left:2px solid var(--accent-orange);
+}
+.ai-sev-badge { padding:2px 6px;border-radius:var(--radius-full);font-size:.58rem;font-weight:700;font-family:'Orbitron',monospace; }
+.ai-rec-item  { font-size:.68rem;color:var(--text-secondary);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04); }
+.ai-next-insp { font-size:.62rem;color:var(--text-muted);text-align:right;margin-top:var(--gap-sm); }
+.ai-scan-time {
+  font-size:.58rem;color:var(--text-muted);text-align:right;
+  margin-top:6px;padding-top:6px;border-top:1px solid var(--glass-border);
+  font-family:'Orbitron',monospace;
+}
+
+</style>
+</head>
+<body>
+
+  <!-- ═══════════ PARTICLES ═══════════ -->
+  <div id="particles"></div>
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="header-logo">O</div>
+      <div>
+        <div class="header-title">O.U.R.A.N.O.S</div>
+        <div class="header-subtitle">Optimized Unmanned Robotics & Aerial Network for Operational Safety</div>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-indicator"><span class="status-dot online" id="drone-status-dot"></span><span id="drone-status-text">Drone Online</span></div>
+      <div class="status-indicator"><span class="status-dot online"></span><span>LoRa Connected</span></div>
+      <div class="status-indicator"><span class="status-dot warning" id="pi-status-dot"></span><span id="pi-status-text">Pi Standby</span></div>
+      <div class="status-indicator" style="font-family:'Orbitron',monospace;font-size:0.7rem;color:var(--accent-cyan);" id="header-clock">00:00:00</div>
+    </div>
+  </header>
+
+  <!-- ═══════════ DASHBOARD ═══════════ -->
+  <main class="dashboard">
+
+    <!-- ═══ LEFT: ATTACHMENT CONTROLS ═══ -->
+    <aside class="left-panel">
+
+      <!-- ESP32-CAM -->
+      <div class="glass-card attachment-card fade-in">
+        <div class="attachment-header">
+          <div class="attachment-info"><div class="attachment-icon camera">🎥</div><div><div class="attachment-name">ESP32-CAM</div><div class="attachment-model">Vision Module</div></div></div>
+          <label class="toggle-switch"><input type="checkbox" id="toggle-camera" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="control-group">
+          <div class="control-item"><span class="control-label">Status</span><span class="status-badge active" id="camera-status">ACTIVE</span></div>
+          <div class="control-item"><span class="control-label">Angle</span><span class="control-value" id="camera-angle-val">45°</span></div>
+          <input type="range" id="camera-angle" min="0" max="180" value="45">
+          <div class="control-item"><span class="control-label">Resolution</span>
+            <select class="custom-select" id="camera-res"><option value="320x240">320×240</option><option value="640x480" selected>640×480</option><option value="1280x720">1280×720</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- LoRa -->
+      <div class="glass-card attachment-card fade-in">
+        <div class="attachment-header">
+          <div class="attachment-info"><div class="attachment-icon lora">📡</div><div><div class="attachment-name">LoRa SX1276</div><div class="attachment-model">IoT Gateway</div></div></div>
+          <label class="toggle-switch"><input type="checkbox" id="toggle-lora" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="control-group">
+          <div class="control-item"><span class="control-label">Signal</span>
+            <div class="signal-bars" id="lora-signal">
+              <div class="signal-bar active" style="height:4px"></div><div class="signal-bar active" style="height:7px"></div>
+              <div class="signal-bar active" style="height:10px"></div><div class="signal-bar active" style="height:13px"></div>
+              <div class="signal-bar" style="height:16px"></div>
+            </div>
+          </div>
+          <div class="control-item"><span class="control-label">Frequency</span><span class="control-value">868 MHz</span></div>
+          <div class="control-item"><span class="control-label">TX Power</span><span class="control-value">14 dBm</span></div>
+          <div class="control-item"><span class="control-label">Packets</span><span class="control-value" id="lora-packets">0</span></div>
+        </div>
+      </div>
+
+      <!-- DJI Naza -->
+      <div class="glass-card attachment-card fade-in">
+        <div class="attachment-header">
+          <div class="attachment-info"><div class="attachment-icon flight">🎮</div><div><div class="attachment-name">DJI Naza M V2</div><div class="attachment-model">Flight Controller</div></div></div>
+          <label class="toggle-switch"><input type="checkbox" id="toggle-naza" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="control-group">
+          <div class="control-item"><span class="control-label">Armed</span><span class="status-badge active" id="naza-armed">ARMED</span></div>
+          <div class="control-item"><span class="control-label">Flight Mode</span></div>
+          <div class="btn-group">
+            <button class="btn-mini active" data-mode="gps" id="mode-gps">GPS</button>
+            <button class="btn-mini" data-mode="atti" id="mode-atti">ATTI</button>
+            <button class="btn-mini" data-mode="manual" id="mode-manual">Manual</button>
+          </div>
+          <div class="control-item"><span class="control-label">Throttle</span><span class="control-value" id="throttle-val">50%</span></div>
+          <input type="range" id="throttle" min="0" max="100" value="50">
+        </div>
+      </div>
+
+      <!-- Raspberry Pi -->
+      <div class="glass-card attachment-card fade-in">
+        <div class="attachment-header">
+          <div class="attachment-info"><div class="attachment-icon pi">🖥️</div><div><div class="attachment-name">Raspberry Pi</div><div class="attachment-model">Companion Computer</div></div></div>
+          <label class="toggle-switch"><input type="checkbox" id="toggle-pi" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="control-group">
+          <div class="control-item"><span class="control-label">AI Processing</span><span class="status-badge active" id="pi-ai-status">RUNNING</span></div>
+          <div class="control-item"><span class="control-label">CPU</span><span class="control-value" id="pi-cpu">42%</span></div>
+          <div class="bin-fill-bar"><div class="bin-fill-level low" id="pi-cpu-bar" style="width:42%"></div></div>
+          <div class="control-item"><span class="control-label">RAM</span><span class="control-value" id="pi-ram">61%</span></div>
+          <div class="bin-fill-bar"><div class="bin-fill-level medium" id="pi-ram-bar" style="width:61%"></div></div>
+          <div class="control-item"><span class="control-label">AI Model</span>
+            <select class="custom-select" id="ai-model"><option value="waste">🗑️ Waste Detection</option><option value="crowd">👥 Crowd Analysis</option><option value="traffic">🚗 Traffic Monitor</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- LED Display -->
+      <div class="glass-card attachment-card fade-in">
+        <div class="attachment-header">
+          <div class="attachment-info"><div class="attachment-icon led">📺</div><div><div class="attachment-name">LED Display</div><div class="attachment-model">Smart Advertising</div></div></div>
+          <label class="toggle-switch"><input type="checkbox" id="toggle-led"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="control-group">
+          <div class="control-item"><span class="control-label">Message</span></div>
+          <input type="text" class="text-input" id="led-message" placeholder="Type message..." value="O.U.R.A.N.O.S – Smart City">
+          <div class="control-item"><span class="control-label">Color</span></div>
+          <div class="color-row" id="led-colors">
+            <div class="color-dot selected" style="background:var(--accent-cyan)" data-color="#06d6a0"></div>
+            <div class="color-dot" style="background:var(--accent-purple)" data-color="#8b5cf6"></div>
+            <div class="color-dot" style="background:var(--accent-pink)" data-color="#ec4899"></div>
+            <div class="color-dot" style="background:var(--accent-orange)" data-color="#f59e0b"></div>
+            <div class="color-dot" style="background:var(--accent-blue)" data-color="#3b82f6"></div>
+            <div class="color-dot" style="background:white" data-color="#ffffff"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audio -->
+      <div class="glass-card attachment-card fade-in">
+        <div class="attachment-header">
+          <div class="attachment-info"><div class="attachment-icon audio">🔊</div><div><div class="attachment-name">Audio Module</div><div class="attachment-model">PA System</div></div></div>
+          <label class="toggle-switch"><input type="checkbox" id="toggle-audio"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="control-group">
+          <div class="control-item"><span class="control-label">Announcement</span></div>
+          <select class="custom-select" id="audio-announcement"><option value="none">— Select —</option><option value="collect">🗑️ Collection in progress</option><option value="event">📢 Event announcement</option><option value="safety">⚠️ Safety warning</option></select>
+          <div class="control-item"><span class="control-label">Volume</span><span class="control-value" id="volume-val">70%</span></div>
+          <input type="range" id="audio-volume" min="0" max="100" value="70">
+        </div>
+      </div>
+
+      <!-- Banner -->
+      <div class="glass-card attachment-card fade-in">
+        <div class="attachment-header">
+          <div class="attachment-info"><div class="attachment-icon banner">🏷️</div><div><div class="attachment-name">Aerial Banner</div><div class="attachment-model">Physical Display</div></div></div>
+          <label class="toggle-switch"><input type="checkbox" id="toggle-banner"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="control-group">
+          <div class="control-item"><span class="control-label">Deploy Status</span><span class="status-badge inactive" id="banner-status">RETRACTED</span></div>
+        </div>
+      </div>
+
+      <!-- Phone Camera → Raspberry Pi -->
+      <div class="glass-card attachment-card pi-integration-card fade-in">
+        <div class="attachment-header">
+          <div class="attachment-info"><div class="attachment-icon phone">📱</div><div><div class="attachment-name">Phone Camera</div><div class="attachment-model">→ Raspberry Pi Feed</div></div></div>
+          <label class="toggle-switch"><input type="checkbox" id="toggle-phone-cam"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="control-group">
+          <div class="control-item"><span class="control-label">Stream Source</span></div>
+          <select class="custom-select" id="phone-stream-source">
+            <option value="browser">🌐 Browser Camera (Sim)</option>
+            <option value="ipwebcam">📱 IP Webcam (Android)</option>
+            <option value="droidcam">📷 DroidCam</option>
+            <option value="rtsp">📡 RTSP Stream</option>
+          </select>
+          <input type="text" class="text-input" id="phone-stream-url" placeholder="http://192.168.1.x:8080/video" style="display:none;margin-top:6px;">
+          <div class="pi-connection-status disconnected" id="phone-cam-conn">⏳ Awaiting connection...</div>
+          <div class="pi-diagram">
+            <div class="pi-node" id="pi-node-phone"><span class="pi-node-icon">📱</span><span class="pi-node-label">Phone</span><span class="pi-node-detail">Camera</span></div>
+            <span class="pi-arrow">→</span>
+            <div class="pi-node"><span class="pi-node-icon">📶</span><span class="pi-node-label">WiFi</span><span class="pi-node-detail">LAN</span></div>
+            <span class="pi-arrow">→</span>
+            <div class="pi-node" id="pi-node-rpi"><span class="pi-node-icon">🖥️</span><span class="pi-node-label">Pi</span><span class="pi-node-detail">OpenCV</span></div>
+            <span class="pi-arrow">→</span>
+            <div class="pi-node" id="pi-node-dash"><span class="pi-node-icon">📊</span><span class="pi-node-label">Dash</span><span class="pi-node-detail">Live</span></div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ═══ AI VISION ENGINE ═══ -->
+      <div class="glass-card attachment-card ai-settings-card fade-in">
+        <div class="attachment-header">
+          <div class="attachment-info">
+            <div class="attachment-icon" style="background:rgba(139,92,246,.15);font-size:1.2rem;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;">🤖</div>
+            <div><div class="attachment-name">AI Vision Engine</div><div class="attachment-model">Claude Vision API</div></div>
+          </div>
+          <span class="ai-status-badge ai-badge-offline" id="ai-status-badge">OFFLINE</span>
+        </div>
+        <div class="control-group">
+          <div class="control-item"><span class="control-label">API Key</span></div>
+          <div style="display:flex;gap:5px;">
+            <input type="password" class="text-input" id="ai-api-key" placeholder="sk-ant-api03-…" style="flex:1;font-size:.68rem;">
+            <button class="btn-mini" id="btn-ai-connect" style="white-space:nowrap;">Connect</button>
+          </div>
+          <div class="control-item">
+            <span class="control-label">Model</span>
+            <select class="custom-select" id="ai-model" style="width:auto;font-size:.65rem;padding:4px 6px;">
+              <option value="claude-opus-4-6">Opus 4.6 ★</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+              <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+            </select>
+          </div>
+          <div class="control-item">
+            <span class="control-label">Auto-Scan</span>
+            <label class="toggle-switch"><input type="checkbox" id="toggle-ai-auto"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="control-item">
+            <span class="control-label">Interval</span>
+            <span class="control-value" id="ai-interval-val">10s</span>
+          </div>
+          <input type="range" id="ai-interval" min="5" max="60" value="10" step="5">
+          <button class="camera-btn" id="btn-ai-scan" style="width:100%;margin-top:8px;opacity:.4;" disabled>🔍 Analyze Frame</button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ═══ CENTER ═══ -->
+    <section class="center-panel">
+
+      <!-- Drone Viz -->
+      <div class="glass-card drone-view-card">
+        <div class="section-title"><span class="icon">🛸</span> DRONE VISUALIZATION</div>
+        <div class="drone-container" id="drone-container">
+          <div class="drone-arm tl"></div><div class="drone-arm tr"></div><div class="drone-arm bl"></div><div class="drone-arm br"></div>
+          <div class="propeller tl cw"><div class="propeller-blade"></div></div>
+          <div class="propeller tr ccw"><div class="propeller-blade"></div></div>
+          <div class="propeller bl ccw"><div class="propeller-blade"></div></div>
+          <div class="propeller br cw"><div class="propeller-blade"></div></div>
+          <div class="propeller-hub tl"></div><div class="propeller-hub tr"></div><div class="propeller-hub bl"></div><div class="propeller-hub br"></div>
+          <div class="drone-body"><div class="drone-camera-dot active" id="drone-cam-indicator"></div></div>
+          <div class="drone-led fl"></div><div class="drone-led fr"></div><div class="drone-led rl"></div><div class="drone-led rr"></div>
+        </div>
+        <div class="flight-mode-display">
+          <div class="flight-stat"><div class="flight-stat-value" id="display-alt">45m</div><div class="flight-stat-label">Altitude</div></div>
+          <div class="flight-stat"><div class="flight-stat-value" id="display-speed">12 km/h</div><div class="flight-stat-label">Speed</div></div>
+          <div class="flight-stat"><div class="flight-stat-value" id="display-mode">GPS</div><div class="flight-stat-label">Mode</div></div>
+          <div class="flight-stat"><div class="flight-stat-value" id="display-batt">87%</div><div class="flight-stat-label">Battery</div></div>
+        </div>
+      </div>
+
+      <!-- Camera Feed -->
+      <div class="glass-card camera-feed-card">
+        <div class="section-title"><span class="icon">📷</span> LIVE CAMERA FEED</div>
+        <div class="camera-feed-container" id="camera-feed-container">
+          <div class="camera-placeholder" id="camera-placeholder">
+            <div class="camera-placeholder-icon">📷</div>
+            <div class="camera-placeholder-text">Click "Start Camera" to simulate Phone → Pi pipeline</div>
+            <div class="camera-placeholder-text" style="font-size:0.6rem;opacity:0.4;">Uses browser getUserMedia as stand-in for phone camera</div>
+          </div>
+          <video id="camera-video" autoplay playsinline muted style="display:none;"></video>
+          <canvas id="camera-overlay-canvas" style="display:none;"></canvas>
+          <div class="camera-overlay"></div>
+          <div class="camera-hud">
+            <div class="camera-hud-corner tl"></div><div class="camera-hud-corner tr"></div>
+            <div class="camera-hud-corner bl"></div><div class="camera-hud-corner br"></div>
+            <div class="camera-hud-text top-label">O.U.R.A.N.O.S – AI VISION</div>
+            <div class="camera-hud-text bottom-label" id="cam-hud-info">640×480 | 30fps</div>
+            <div class="camera-hud-text rec" id="cam-rec" style="display:none;">● REC</div>
+          </div>
+        </div>
+        <div class="camera-controls">
+          <span class="camera-source-label" id="cam-source-label">Source: Browser Camera (Simulation)</span>
+          <div style="display:flex;gap:6px;">
+            <button class="camera-btn" id="btn-start-camera">▶ Start Camera</button>
+            <button class="camera-btn" id="btn-snapshot" style="display:none;">📸 Snap</button>
+            <button class="camera-btn" id="btn-ai-cam-analyze" style="display:none;background:rgba(139,92,246,.12);border-color:var(--accent-purple);color:var(--accent-purple);">🤖 AI</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Tabs -->
+      <div class="mode-tabs">
+        <button class="mode-tab active" data-tab="waste">🗑️ Waste Management</button>
+        <button class="mode-tab" data-tab="crowd">👥 Crowd & Traffic</button>
+        <button class="mode-tab" data-tab="advertising">📺 Smart Advertising</button>
+        <button class="mode-tab" data-tab="alerts">🔔 Alerts</button>
+        <button class="mode-tab" data-tab="inspection">🏗️ Inspection</button>
+      </div>
+
+      <!-- Tab: Waste -->
+      <div class="glass-card mode-content active" id="tab-waste">
+        <div class="section-title"><span class="icon">🗑️</span> WASTE BIN MONITORING</div>
+        <div class="waste-grid" id="waste-grid"></div>
+        <div style="margin-top:var(--gap-md);">
+          <div class="section-title" style="font-size:0.65rem;"><span class="icon">🗺️</span> CITY MAP</div>
+          <div class="city-map">
+            <div class="map-grid"></div>
+            <div class="map-road horizontal" style="top:30%"></div><div class="map-road horizontal" style="top:60%"></div><div class="map-road horizontal" style="top:85%"></div>
+            <div class="map-road vertical" style="left:25%"></div><div class="map-road vertical" style="left:50%"></div><div class="map-road vertical" style="left:75%"></div>
+            <div class="map-marker drone"></div>
+            <div class="map-marker bin" style="top:28%;left:24%"></div>
+            <div class="map-marker bin" style="top:58%;left:49%"></div>
+            <div class="map-marker bin full" style="top:29%;left:74%"></div>
+            <div class="map-marker bin" style="top:59%;left:24%"></div>
+            <div class="map-marker bin full" style="top:84%;left:49%"></div>
+            <div class="map-marker bin" style="top:84%;left:74%"></div>
+            <div class="map-legend">
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--accent-purple)"></div>Drone</div>
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--accent-cyan)"></div>Bin OK</div>
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--accent-red)"></div>Bin Full</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Crowd -->
+      <div class="glass-card mode-content" id="tab-crowd">
+        <div class="section-title"><span class="icon">👥</span> CROWD DENSITY HEATMAP</div>
+        <div class="crowd-grid" id="crowd-grid"></div>
+        <div style="margin-top:var(--gap-md);">
+          <div class="section-title" style="font-size:0.65rem;"><span class="icon">🚦</span> TRAFFIC INTELLIGENCE</div>
+          <div class="city-map">
+            <div class="map-grid"></div>
+            <div class="map-road horizontal" style="top:30%"></div><div class="map-road horizontal" style="top:60%"></div>
+            <div class="map-road vertical" style="left:25%"></div><div class="map-road vertical" style="left:50%"></div><div class="map-road vertical" style="left:75%"></div>
+            <div class="map-marker drone"></div>
+            <div class="map-marker" style="top:29%;left:24%;background:var(--accent-cyan);box-shadow:0 0 6px var(--accent-cyan-glow);width:12px;height:12px;border-radius:3px;"></div>
+            <div class="map-marker" style="top:29%;left:49%;background:var(--accent-orange);box-shadow:0 0 6px var(--accent-orange-glow);width:12px;height:12px;border-radius:3px;"></div>
+            <div class="map-marker" style="top:59%;left:49%;background:var(--accent-red);box-shadow:0 0 6px var(--accent-red-glow);width:12px;height:12px;border-radius:3px;animation:binAlert 1s infinite;"></div>
+            <div class="map-marker" style="top:59%;left:74%;background:var(--accent-cyan);box-shadow:0 0 6px var(--accent-cyan-glow);width:12px;height:12px;border-radius:3px;"></div>
+            <div class="map-legend">
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--accent-cyan)"></div>Clear</div>
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--accent-orange)"></div>Moderate</div>
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--accent-red)"></div>Congested</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Advertising -->
+      <div class="glass-card mode-content" id="tab-advertising">
+        <div class="section-title"><span class="icon">📺</span> LED DISPLAY PREVIEW</div>
+        <div class="led-preview" id="led-preview"><span class="scrolling-text" id="led-preview-text">O.U.R.A.N.O.S – Smart City</span></div>
+        <div style="margin-top:var(--gap-md);">
+          <div class="control-item"><span class="control-label">Audio Status</span><span class="control-value" id="ad-audio-status">None</span></div>
+          <div class="control-item"><span class="control-label">Banner Status</span><span class="control-value" id="ad-banner-status">Retracted</span></div>
+        </div>
+      </div>
+
+      <!-- Tab: Alerts -->
+      <div class="glass-card mode-content" id="tab-alerts">
+        <div class="section-title"><span class="icon">🔔</span> SYSTEM ALERTS</div>
+        <div class="alerts-panel" id="alerts-panel"></div>
+      </div>
+
+
+      <!-- Tab: Inspection -->
+      <div class="glass-card mode-content" id="tab-inspection">
+        <div class="section-title"><span class="icon">🏗️</span> STRUCTURAL INSPECTION — AI CRACK DETECTION</div>
+        <div id="inspection-ai-content">
+          <div class="ai-placeholder" style="padding:var(--gap-xl);">
+            <div style="font-size:3rem;opacity:.2;margin-bottom:var(--gap-sm);">🏗️</div>
+            <div style="font-size:.78rem;color:var(--accent-purple);font-family:'Orbitron',monospace;letter-spacing:1px;margin-bottom:var(--gap-sm);">WALL INSPECTION MODE</div>
+            <div style="color:var(--text-muted);font-size:.74rem;line-height:2;text-align:center;">
+              1. Enter API key → <strong style="color:var(--text-secondary);">Connect</strong><br>
+              2. <strong style="color:var(--accent-cyan);">▶ Start Camera</strong> in feed section<br>
+              3. Point camera at wall / surface<br>
+              4. Click <strong style="color:var(--accent-purple);">🔍 Analyze Frame</strong><br><br>
+              AI detects <strong style="color:var(--accent-orange);">cracks · spalling · moisture · corrosion</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══ RIGHT: TELEMETRY ═══ -->
+    <aside class="right-panel">
+
+      <div class="glass-card telemetry-card">
+        <div class="section-title"><span class="icon">📊</span> FLIGHT TELEMETRY</div>
+        <div class="gauge-grid">
+          <div class="gauge"><div class="gauge-ring"><svg viewBox="0 0 36 36"><circle class="gauge-bg" cx="18" cy="18" r="15.9"/><circle class="gauge-fill purple" cx="18" cy="18" r="15.9" stroke-dasharray="100" stroke-dashoffset="55" id="gauge-alt"/></svg><div class="gauge-value" id="gauge-alt-val">45m</div></div><div class="gauge-label">Altitude</div></div>
+          <div class="gauge"><div class="gauge-ring"><svg viewBox="0 0 36 36"><circle class="gauge-bg" cx="18" cy="18" r="15.9"/><circle class="gauge-fill cyan" cx="18" cy="18" r="15.9" stroke-dasharray="100" stroke-dashoffset="76" id="gauge-speed"/></svg><div class="gauge-value" id="gauge-speed-val">12</div></div><div class="gauge-label">Speed km/h</div></div>
+          <div class="gauge"><div class="gauge-ring"><svg viewBox="0 0 36 36"><circle class="gauge-bg" cx="18" cy="18" r="15.9"/><circle class="gauge-fill blue" cx="18" cy="18" r="15.9" stroke-dasharray="100" stroke-dashoffset="13" id="gauge-batt"/></svg><div class="gauge-value" id="gauge-batt-val">87%</div></div><div class="gauge-label">Battery</div></div>
+          <div class="gauge"><div class="gauge-ring"><svg viewBox="0 0 36 36"><circle class="gauge-bg" cx="18" cy="18" r="15.9"/><circle class="gauge-fill orange" cx="18" cy="18" r="15.9" stroke-dasharray="100" stroke-dashoffset="62" id="gauge-temp"/></svg><div class="gauge-value" id="gauge-temp-val">38°</div></div><div class="gauge-label">Temp °C</div></div>
+        </div>
+      </div>
+
+      <div class="glass-card telemetry-card">
+        <div class="section-title"><span class="icon">📍</span> GPS POSITION</div>
+        <div class="gps-info">
+          <div class="gps-coord"><span class="gps-coord-label">Latitude</span><span class="gps-coord-value" id="gps-lat">33.5731°N</span></div>
+          <div class="gps-coord"><span class="gps-coord-label">Longitude</span><span class="gps-coord-value" id="gps-lon">7.5898°W</span></div>
+          <div class="gps-coord"><span class="gps-coord-label">Satellites</span><span class="gps-coord-value" id="gps-sats">12</span></div>
+          <div class="gps-coord"><span class="gps-coord-label">HDOP</span><span class="gps-coord-value" id="gps-hdop">0.8</span></div>
+        </div>
+      </div>
+
+      <div class="glass-card telemetry-card">
+        <div class="section-title"><span class="icon">📡</span> LoRa NETWORK</div>
+        <div class="gps-info">
+          <div class="gps-coord"><span class="gps-coord-label">RSSI</span><span class="gps-coord-value" id="lora-rssi">-67 dBm</span></div>
+          <div class="gps-coord"><span class="gps-coord-label">SNR</span><span class="gps-coord-value" id="lora-snr">9.5 dB</span></div>
+          <div class="gps-coord"><span class="gps-coord-label">Bandwidth</span><span class="gps-coord-value">125 kHz</span></div>
+          <div class="gps-coord"><span class="gps-coord-label">Spreading</span><span class="gps-coord-value">SF7</span></div>
+        </div>
+      </div>
+
+      <div class="glass-card telemetry-card">
+        <div class="section-title"><span class="icon">⚙️</span> SYSTEM HEALTH</div>
+        <div class="gps-info">
+          <div class="gps-coord"><span class="gps-coord-label">Flight Time</span><span class="gps-coord-value" id="flight-time">00:12:34</span></div>
+          <div class="gps-coord"><span class="gps-coord-label">Distance</span><span class="gps-coord-value" id="distance">2.4 km</span></div>
+          <div class="gps-coord"><span class="gps-coord-label">Motor Temp</span><span class="gps-coord-value" id="motor-temp">42°C</span></div>
+          <div class="gps-coord"><span class="gps-coord-label">Vibration</span><span class="gps-coord-value" id="vibration">Low</span></div>
+        </div>
+      </div>
+
+      <!-- Pi Pipeline Info -->
+      <div class="glass-card telemetry-card pi-integration-card">
+        <div class="section-title"><span class="icon">🔗</span> Pi CAMERA PIPELINE</div>
+        <div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.6;">
+          <strong style="color:var(--accent-cyan)">Real Hardware:</strong><br>
+          1. Install <strong>IP Webcam</strong> on phone<br>
+          2. Stream MJPEG →<br><code style="color:var(--accent-purple);font-size:0.63rem;">http://phone:8080/video</code><br>
+          3. Pi captures: <code style="color:var(--accent-purple);font-size:0.63rem;">cv2.VideoCapture(url)</code><br>
+          4. Flask re-streams to dash<br><br>
+          <strong style="color:var(--accent-orange)">Now:</strong> Simulation mode<br>
+          Using <code style="font-size:0.63rem;">getUserMedia</code> API
+        </div>
+      </div>
+
+      <div class="glass-card telemetry-card ai-results-card">
+        <div class="section-title"><span class="icon">🤖</span> AI INSIGHTS</div>
+        <div id="ai-insights-content">
+          <div class="ai-placeholder">
+            <div style="font-size:2rem;opacity:.2;">🔍</div>
+            <div style="font-size:.68rem;color:var(--text-muted);">Connect API key &amp; start camera<br>to enable AI analysis</div>
+          </div>
+        </div>
+        <div class="ai-scan-time" id="ai-scan-time"></div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- ═══════════ JAVASCRIPT ═══════════ -->
+  <script>
+/* ═══════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════ */
+const state = {
+  camera: true, lora: true, naza: true, pi: true,
+  led: false, audio: false, banner: false, phoneCam: false,
+  flightMode: 'GPS', throttle: 50,
+  altitude: 45, speed: 12, battery: 87, temp: 38,
+  gpsLat: 33.5731, gpsLon: -7.5898,
+  loraPackets: 0, flightSeconds: 754,
+  cameraStream: null, cameraActive: false,
+  ledColor: '#06d6a0', ledMessage: 'O.U.R.A.N.O.S – Smart City',
+};
+
+/* ═══════════════════════════════════════
+   PARTICLES
+   ═══════════════════════════════════════ */
+(function createParticles() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (8 + Math.random() * 12) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+    container.appendChild(p);
+  }
+})();
+
+/* ═══════════════════════════════════════
+   CLOCK
+   ═══════════════════════════════════════ */
+setInterval(() => {
+  document.getElementById('header-clock').textContent = new Date().toLocaleTimeString('en-GB');
+}, 1000);
+
+/* ═══════════════════════════════════════
+   TOGGLE SWITCHES
+   ═══════════════════════════════════════ */
+const toggleMap = {
+  'toggle-camera': { key: 'camera', statusEl: 'camera-status', onText: 'ACTIVE', offText: 'OFF',
+    onExtra: () => { document.getElementById('drone-cam-indicator').classList.add('active'); },
+    offExtra: () => { document.getElementById('drone-cam-indicator').classList.remove('active'); }
+  },
+  'toggle-lora': { key: 'lora' },
+  'toggle-naza': { key: 'naza', statusEl: 'naza-armed', onText: 'ARMED', offText: 'DISARMED',
+    onExtra: () => { document.getElementById('drone-container').classList.remove('stopped'); },
+    offExtra: () => { document.getElementById('drone-container').classList.add('stopped'); }
+  },
+  'toggle-pi': { key: 'pi', statusEl: 'pi-ai-status', onText: 'RUNNING', offText: 'STOPPED',
+    onExtra: () => { document.getElementById('pi-status-dot').classList.replace('warning','online'); document.getElementById('pi-status-text').textContent='Pi Active'; },
+    offExtra: () => { document.getElementById('pi-status-dot').classList.replace('online','warning'); document.getElementById('pi-status-text').textContent='Pi Standby'; }
+  },
+  'toggle-led': { key: 'led' },
+  'toggle-audio': { key: 'audio' },
+  'toggle-banner': { key: 'banner', statusEl: 'banner-status', onText: 'DEPLOYED', offText: 'RETRACTED',
+    onExtra: () => { document.getElementById('ad-banner-status').textContent='Deployed'; },
+    offExtra: () => { document.getElementById('ad-banner-status').textContent='Retracted'; }
+  },
+  'toggle-phone-cam': { key: 'phoneCam',
+    onExtra: () => {
+      document.getElementById('phone-cam-conn').className='pi-connection-status connected';
+      document.getElementById('phone-cam-conn').textContent='✅ Pipeline Active (Simulation)';
+      document.querySelectorAll('.pi-node').forEach(n=>n.classList.add('active'));
+    },
+    offExtra: () => {
+      document.getElementById('phone-cam-conn').className='pi-connection-status disconnected';
+      document.getElementById('phone-cam-conn').textContent='⏳ Awaiting connection...';
+      document.querySelectorAll('.pi-node').forEach(n=>n.classList.remove('active'));
+    }
+  },
+};
+
+Object.entries(toggleMap).forEach(([id, cfg]) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('change', () => {
+    state[cfg.key] = el.checked;
+    if (cfg.statusEl) {
+      const badge = document.getElementById(cfg.statusEl);
+      badge.textContent = el.checked ? cfg.onText : cfg.offText;
+      badge.className = 'status-badge ' + (el.checked ? 'active' : 'inactive');
+    }
+    if (el.checked && cfg.onExtra) cfg.onExtra();
+    if (!el.checked && cfg.offExtra) cfg.offExtra();
+    addAlert(el.checked ? 'success' : 'warning', `${cfg.key.toUpperCase()} ${el.checked ? 'enabled' : 'disabled'}`);
+  });
+});
+
+/* ═══════════════════════════════════════
+   PHONE STREAM SOURCE
+   ═══════════════════════════════════════ */
+document.getElementById('phone-stream-source').addEventListener('change', function() {
+  const urlInput = document.getElementById('phone-stream-url');
+  urlInput.style.display = this.value !== 'browser' ? 'block' : 'none';
+  document.getElementById('cam-source-label').textContent = 'Source: ' + this.options[this.selectedIndex].text;
+});
+
+/* ═══════════════════════════════════════
+   SLIDERS
+   ═══════════════════════════════════════ */
+document.getElementById('camera-angle').addEventListener('input', function() {
+  document.getElementById('camera-angle-val').textContent = this.value + '°';
+});
+document.getElementById('throttle').addEventListener('input', function() {
+  state.throttle = parseInt(this.value);
+  document.getElementById('throttle-val').textContent = this.value + '%';
+});
+document.getElementById('audio-volume').addEventListener('input', function() {
+  document.getElementById('volume-val').textContent = this.value + '%';
+});
+
+/* ═══════════════════════════════════════
+   FLIGHT MODE BUTTONS
+   ═══════════════════════════════════════ */
+document.querySelectorAll('[data-mode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.flightMode = btn.dataset.mode.toUpperCase();
+    document.getElementById('display-mode').textContent = state.flightMode;
+    addAlert('info', `Flight mode: ${state.flightMode}`);
+  });
+});
+
+/* ═══════════════════════════════════════
+   LED COLOR DOTS
+   ═══════════════════════════════════════ */
+document.querySelectorAll('#led-colors .color-dot').forEach(dot => {
+  dot.addEventListener('click', () => {
+    document.querySelectorAll('#led-colors .color-dot').forEach(d => d.classList.remove('selected'));
+    dot.classList.add('selected');
+    state.ledColor = dot.dataset.color;
+    const preview = document.getElementById('led-preview');
+    preview.style.color = state.ledColor;
+    preview.style.textShadow = `0 0 10px ${state.ledColor}`;
+  });
+});
+
+/* LED Message */
+document.getElementById('led-message').addEventListener('input', function() {
+  state.ledMessage = this.value || 'O.U.R.A.N.O.S';
+  document.getElementById('led-preview-text').textContent = state.ledMessage;
+});
+
+/* Audio announcement */
+document.getElementById('audio-announcement').addEventListener('change', function() {
+  const labels = { none:'None', collect:'Collection in progress', event:'Event announcement', safety:'Safety warning' };
+  document.getElementById('ad-audio-status').textContent = labels[this.value] || 'None';
+  if (this.value !== 'none') addAlert('info', `Audio: ${labels[this.value]}`);
+});
+
+/* ═══════════════════════════════════════
+   MODE TABS
+   ═══════════════════════════════════════ */
+document.querySelectorAll('.mode-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.mode-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* ═══════════════════════════════════════
+   WASTE BINS
+   ═══════════════════════════════════════ */
+const bins = [
+  { id:'BIN-001', fill:35 }, { id:'BIN-002', fill:72 },
+  { id:'BIN-003', fill:91 }, { id:'BIN-004', fill:15 },
+  { id:'BIN-005', fill:88 }, { id:'BIN-006', fill:45 },
+];
+
+function renderBins() {
+  const grid = document.getElementById('waste-grid');
+  grid.innerHTML = bins.map(b => {
+    const cls = b.fill > 80 ? 'high' : b.fill > 50 ? 'medium' : 'low';
+    return `<div class="bin-card">
+      <div class="bin-icon">${b.fill > 80 ? '🔴' : b.fill > 50 ? '🟠' : '🟢'}</div>
+      <div class="bin-id">${b.id}</div>
+      <div class="bin-fill-bar"><div class="bin-fill-level ${cls}" style="width:${b.fill}%"></div></div>
+      <div class="bin-percent" style="color:var(--accent-${cls === 'high' ? 'red' : cls === 'medium' ? 'orange' : 'cyan'})">${b.fill}%</div>
+    </div>`;
+  }).join('');
+}
+renderBins();
+
+/* ═══════════════════════════════════════
+   CROWD HEATMAP
+   ═══════════════════════════════════════ */
+function renderHeatmap() {
+  const grid = document.getElementById('crowd-grid');
+  for (let i = 0; i < 60; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'heatmap-cell';
+    const v = Math.random();
+    const r = Math.floor(v * 200);
+    const g = Math.floor((1 - v) * 150);
+    cell.style.background = `rgba(${r},${g},50,${0.2 + v * 0.6})`;
+    grid.appendChild(cell);
+  }
+}
+renderHeatmap();
+
+/* ═══════════════════════════════════════
+   ALERTS
+   ═══════════════════════════════════════ */
+function addAlert(type, message) {
+  const panel = document.getElementById('alerts-panel');
+  const time = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  const el = document.createElement('div');
+  el.className = `alert-item ${type}`;
+  el.innerHTML = `<span class="alert-time">${time}</span><span>${message}</span>`;
+  panel.prepend(el);
+  if (panel.children.length > 30) panel.lastChild.remove();
+}
+
+// Initial alerts
+addAlert('success', 'Dashboard initialized');
+addAlert('info', 'LoRa gateway connected — 868 MHz');
+addAlert('success', 'DJI Naza M V2 armed — GPS mode');
+addAlert('info', 'Raspberry Pi AI: Waste Detection loaded');
+
+/* ═══════════════════════════════════════
+   CAMERA (getUserMedia simulation)
+   ═══════════════════════════════════════ */
+const videoEl = document.getElementById('camera-video');
+const overlayCanvas = document.getElementById('camera-overlay-canvas');
+const overlayCtx = overlayCanvas.getContext('2d');
+let camAnimFrame = null;
+
+document.getElementById('btn-start-camera').addEventListener('click', async function() {
+  if (state.cameraActive) {
+    // Stop
+    if (state.cameraStream) { state.cameraStream.getTracks().forEach(t => t.stop()); state.cameraStream = null; }
+    videoEl.style.display = 'none';
+    overlayCanvas.style.display = 'none';
+    document.getElementById('camera-placeholder').style.display = 'flex';
+    document.getElementById('cam-rec').style.display = 'none';
+    document.getElementById('btn-snapshot').style.display = 'none';
+    this.textContent = '▶ Start Camera';
+    this.classList.remove('active');
+    state.cameraActive = false;
+    if (camAnimFrame) cancelAnimationFrame(camAnimFrame);
+    addAlert('warning', 'Camera feed stopped');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} },
+      audio: false
+    });
+    state.cameraStream = stream;
+    videoEl.srcObject = stream;
+    videoEl.style.display = 'block';
+    overlayCanvas.style.display = 'block';
+    document.getElementById('camera-placeholder').style.display = 'none';
+    document.getElementById('cam-rec').style.display = 'block';
+    document.getElementById('btn-snapshot').style.display = 'block';
+    this.textContent = '⏹ Stop Camera';
+    this.classList.add('active');
+    state.cameraActive = true;
+    addAlert('success', 'Camera feed active — simulating Phone → Pi pipeline');
+
+    videoEl.onloadedmetadata = () => {
+      overlayCanvas.width = videoEl.videoWidth;
+      overlayCanvas.height = videoEl.videoHeight;
+      document.getElementById('cam-hud-info').textContent = `${videoEl.videoWidth}×${videoEl.videoHeight} | LIVE`;
+      drawCameraHUD();
+    };
+  } catch(err) {
+    addAlert('critical', 'Camera error: ' + err.message);
+  }
+});
+
+function drawCameraHUD() {
+  if (!state.cameraActive) return;
+  const w = overlayCanvas.width, h = overlayCanvas.height;
+  overlayCtx.clearRect(0, 0, w, h);
+  overlayCtx.font = '13px Orbitron, monospace';
+  overlayCtx.fillStyle = 'rgba(6,214,160,0.75)';
+  overlayCtx.shadowColor = 'rgba(0,0,0,0.8)';
+  overlayCtx.shadowBlur = 3;
+
+  // Top left
+  overlayCtx.fillText(`ALT: ${state.altitude.toFixed(1)}m`, 14, 24);
+  overlayCtx.fillText(`SPD: ${state.speed.toFixed(1)} km/h`, 14, 42);
+  overlayCtx.fillText(`MODE: ${state.flightMode}`, 14, 60);
+
+  // Top right
+  overlayCtx.textAlign = 'right';
+  overlayCtx.fillText(`BAT: ${state.battery.toFixed(0)}%`, w - 14, 24);
+  overlayCtx.fillText(`GPS: ${state.gpsLat.toFixed(4)}°N`, w - 14, 42);
+  overlayCtx.fillText(`     ${Math.abs(state.gpsLon).toFixed(4)}°W`, w - 14, 60);
+  overlayCtx.textAlign = 'left';
+
+  // Crosshair
+  const cx = w / 2, cy = h / 2;
+  overlayCtx.strokeStyle = 'rgba(6,214,160,0.5)';
+  overlayCtx.lineWidth = 1;
+  overlayCtx.beginPath();
+  overlayCtx.moveTo(cx - 25, cy); overlayCtx.lineTo(cx - 8, cy);
+  overlayCtx.moveTo(cx + 8, cy); overlayCtx.lineTo(cx + 25, cy);
+  overlayCtx.moveTo(cx, cy - 25); overlayCtx.lineTo(cx, cy - 8);
+  overlayCtx.moveTo(cx, cy + 8); overlayCtx.lineTo(cx, cy + 25);
+  overlayCtx.stroke();
+
+  // Circle
+  overlayCtx.beginPath();
+  overlayCtx.arc(cx, cy, 35, 0, Math.PI * 2);
+  overlayCtx.stroke();
+
+  // Bottom
+  overlayCtx.fillText(new Date().toISOString().replace('T',' ').split('.')[0], 14, h - 14);
+  overlayCtx.textAlign = 'right';
+  overlayCtx.fillStyle = 'rgba(139,92,246,0.7)';
+  overlayCtx.fillText('SIMULATION MODE', w - 14, h - 14);
+  overlayCtx.textAlign = 'left';
+  overlayCtx.shadowBlur = 0;
+
+  camAnimFrame = requestAnimationFrame(drawCameraHUD);
+}
+
+// Snapshot
+document.getElementById('btn-snapshot').addEventListener('click', () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = videoEl.videoWidth; canvas.height = videoEl.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(videoEl, 0, 0);
+  ctx.drawImage(overlayCanvas, 0, 0);
+  const link = document.createElement('a');
+  link.download = `ouranos_snapshot_${Date.now()}.jpg`;
+  link.href = canvas.toDataURL('image/jpeg', 0.9);
+  link.click();
+  addAlert('success', 'Snapshot saved');
+});
+
+/* ═══════════════════════════════════════
+   SIMULATED TELEMETRY UPDATE LOOP
+   ═══════════════════════════════════════ */
+function updateTelemetry() {
+  if (state.naza) {
+    state.altitude += (Math.random() - 0.48) * 0.4;
+    state.altitude = Math.max(5, Math.min(120, state.altitude));
+    state.speed += (Math.random() - 0.5) * 0.6;
+    state.speed = Math.max(0, Math.min(60, state.speed));
+    state.battery -= 0.005 + Math.random() * 0.008;
+    if (state.battery < 0) state.battery = 100;
+    state.temp += (Math.random() - 0.5) * 0.3;
+    state.temp = Math.max(25, Math.min(65, state.temp));
+    state.gpsLat += (Math.random() - 0.5) * 0.0001;
+    state.gpsLon += (Math.random() - 0.5) * 0.0001;
+    state.flightSeconds++;
+  }
+
+  if (state.lora) {
+    state.loraPackets += Math.floor(Math.random() * 3) + 1;
+  }
+
+  // Update displays
+  document.getElementById('display-alt').textContent = state.altitude.toFixed(0) + 'm';
+  document.getElementById('display-speed').textContent = state.speed.toFixed(0) + ' km/h';
+  document.getElementById('display-batt').textContent = state.battery.toFixed(0) + '%';
+
+  // Gauges
+  const setGauge = (id, valId, pct, txt) => {
+    document.getElementById(id).setAttribute('stroke-dashoffset', 100 - pct);
+    document.getElementById(valId).textContent = txt;
+  };
+  setGauge('gauge-alt', 'gauge-alt-val', Math.min(100, (state.altitude / 120) * 100), state.altitude.toFixed(0) + 'm');
+  setGauge('gauge-speed', 'gauge-speed-val', Math.min(100, (state.speed / 60) * 100), state.speed.toFixed(0));
+  setGauge('gauge-batt', 'gauge-batt-val', state.battery, state.battery.toFixed(0) + '%');
+  setGauge('gauge-temp', 'gauge-temp-val', Math.min(100, (state.temp / 65) * 100), state.temp.toFixed(0) + '°');
+
+  // GPS
+  document.getElementById('gps-lat').textContent = state.gpsLat.toFixed(4) + '°N';
+  document.getElementById('gps-lon').textContent = Math.abs(state.gpsLon).toFixed(4) + '°W';
+  document.getElementById('gps-sats').textContent = 10 + Math.floor(Math.random() * 4);
+  document.getElementById('gps-hdop').textContent = (0.6 + Math.random() * 0.4).toFixed(1);
+
+  // LoRa
+  document.getElementById('lora-packets').textContent = state.loraPackets;
+  document.getElementById('lora-rssi').textContent = (-55 - Math.floor(Math.random() * 25)) + ' dBm';
+  document.getElementById('lora-snr').textContent = (7 + Math.random() * 5).toFixed(1) + ' dB';
+
+  // Signal bars
+  const sigBars = document.querySelectorAll('#lora-signal .signal-bar');
+  const strength = state.lora ? 3 + Math.floor(Math.random() * 3) : 0;
+  sigBars.forEach((bar, i) => bar.classList.toggle('active', i < strength));
+
+  // Pi stats
+  if (state.pi) {
+    const cpu = 30 + Math.floor(Math.random() * 40);
+    const ram = 50 + Math.floor(Math.random() * 30);
+    document.getElementById('pi-cpu').textContent = cpu + '%';
+    document.getElementById('pi-ram').textContent = ram + '%';
+    document.getElementById('pi-cpu-bar').style.width = cpu + '%';
+    document.getElementById('pi-ram-bar').style.width = ram + '%';
+    document.getElementById('pi-cpu-bar').className = 'bin-fill-level ' + (cpu > 70 ? 'high' : cpu > 40 ? 'medium' : 'low');
+    document.getElementById('pi-ram-bar').className = 'bin-fill-level ' + (ram > 70 ? 'high' : ram > 40 ? 'medium' : 'low');
+  }
+
+  // Flight time
+  const hrs = Math.floor(state.flightSeconds / 3600);
+  const mins = Math.floor((state.flightSeconds % 3600) / 60);
+  const secs = state.flightSeconds % 60;
+  document.getElementById('flight-time').textContent =
+    `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  document.getElementById('distance').textContent = (state.flightSeconds * 0.003).toFixed(1) + ' km';
+  document.getElementById('motor-temp').textContent = (38 + Math.floor(Math.random() * 8)) + '°C';
+
+  // Bin fill simulation
+  bins.forEach(b => {
+    b.fill += (Math.random() - 0.3) * 0.5;
+    b.fill = Math.max(5, Math.min(99, b.fill));
+  });
+  renderBins();
+
+  // Heatmap update
+  document.querySelectorAll('.heatmap-cell').forEach(cell => {
+    const v = Math.random();
+    const r = Math.floor(v * 200);
+    const g = Math.floor((1 - v) * 150);
+    cell.style.background = `rgba(${r},${g},50,${0.2 + v * 0.6})`;
+  });
+
+  // Battery alerts
+  if (state.battery < 20 && Math.random() < 0.1) {
+    addAlert('critical', `⚡ Battery critical: ${state.battery.toFixed(0)}%`);
+  }
+  if (bins.some(b => b.fill > 90) && Math.random() < 0.05) {
+    const fullBin = bins.find(b => b.fill > 90);
+    if (fullBin) addAlert('warning', `🗑️ ${fullBin.id} nearly full (${fullBin.fill.toFixed(0)}%)`);
+  }
+}
+
+setInterval(updateTelemetry, 1000);
+
+/* ═══════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════
+   AI VISION ENGINE
+   ═══════════════════════════════════════════════════════ */
+const aiState = {
+  apiKey:'', connected:false, analyzing:false,
+  autoScan:false, intervalId:null, intervalSecs:10,
+  scanCount:0, lastScanTime:null
+};
+
+/* ── Capture clean JPEG frame from live video ── */
+function captureVideoFrame(quality) {
+  quality = quality || 0.85;
+  const cv = document.createElement('canvas');
+  if (videoEl.videoWidth && state.cameraActive) {
+    cv.width  = videoEl.videoWidth;
+    cv.height = videoEl.videoHeight;
+    cv.getContext('2d').drawImage(videoEl, 0, 0);
+    return cv.toDataURL('image/jpeg', quality).split(',')[1];
+  }
+  return null;
+}
+
+/* ── Colour helpers ── */
+function sev2col(s) {
+  if (s >= 4) return 'var(--accent-red)';
+  if (s >= 3) return 'var(--accent-orange)';
+  if (s >= 2) return '#eab308';
+  return 'var(--accent-cyan)';
+}
+function cond2col(c) {
+  return ({excellent:'var(--accent-cyan)',good:'var(--accent-blue)',
+           fair:'var(--accent-orange)',poor:'var(--accent-red)',
+           critical:'#ff0000'})[c] || 'var(--text-muted)';
+}
+
+/* ── AI status badge ── */
+function setAIStatus(status) {
+  const b = document.getElementById('ai-status-badge');
+  const m = {
+    offline:   ['OFFLINE',  'ai-badge-offline'],
+    connected: ['READY',    'ai-badge-ready'],
+    analyzing: ['SCANNING', 'ai-badge-scanning'],
+    error:     ['ERROR',    'ai-badge-error']
+  };
+  const [txt, cls] = m[status] || m.offline;
+  b.textContent = txt;
+  b.className   = 'ai-status-badge ' + cls;
+}
+
+/* ── Mode-specific vision prompts ── */
+const AI_PROMPTS = {
+  waste:`You are an AI drone for smart waste management. Analyze this aerial image.
+Drone: ALT={alt}m | SPD={spd}km/h | GPS={lat},{lon} | BAT={bat}%
+Return ONLY valid JSON, no markdown:
+{"bins":[{"id":"BIN-001","fillLevel":0,"status":"ok","location":"","confidence":0}],"illegalDumping":[{"location":"","severity":"low"}],"issues":[{"type":"","description":"","priority":"low"}],"collectionPriority":[],"overallStatus":"ok","summary":""}`,
+
+  crowd:`You are an AI drone crowd/traffic analyst. Analyze this aerial image.
+Drone: ALT={alt}m | SPD={spd}km/h | GPS={lat},{lon} | BAT={bat}%
+Return ONLY valid JSON, no markdown:
+{"crowdDensity":"low","estimatedPeople":0,"zones":[{"area":"","density":"low","count":0}],"vehicles":{"total":0,"types":[],"congestion":"clear"},"safetyAlerts":[{"type":"","location":"","severity":"low"}],"trafficFlow":"optimal","summary":""}`,
+
+  inspection:`You are an expert AI structural engineer inspecting surfaces for defects.
+Drone: ALT={alt}m | SPD={spd}km/h | GPS={lat},{lon} | BAT={bat}%
+Carefully examine the image for cracks, spalling, moisture, corrosion, and other structural damage.
+Return ONLY valid JSON, no markdown:
+{"cracks":[{"id":"C1","type":"hairline","location":"","estimatedLengthCm":0,"estimatedWidthMm":0,"severity":1,"urgency":"monitor"}],"defects":[{"type":"spalling","location":"","severity":1,"area":"small"}],"overallCondition":"good","structuralIntegrity":90,"immediateAction":false,"recommendations":[],"nextInspectionDays":365,"summary":""}`,
+
+  advertising:`You are an AI drone advertising analyst for a smart city LED display drone.
+Drone: ALT={alt}m | SPD={spd}km/h | GPS={lat},{lon} | BAT={bat}%
+Return ONLY valid JSON, no markdown:
+{"audienceSize":"small(<50)","estimatedCount":0,"demographics":{"ageGroup":"mixed","activity":"commuting","density":"sparse"},"context":"urban_street","bestAdContent":[],"displayColor":"cyan","scrollSpeed":"medium","audienceEngagement":"low","summary":""}`,
+
+  alerts:`You are an AI drone safety monitor. Analyze for hazards and anomalies.
+Drone: ALT={alt}m | SPD={spd}km/h | GPS={lat},{lon} | BAT={bat}%
+Return ONLY valid JSON, no markdown:
+{"alerts":[{"type":"","severity":"low","location":"","description":""}],"riskLevel":"low","recommendations":[],"summary":""}`
+};
+
+/* ── Connect / validate API key ── */
+document.getElementById('btn-ai-connect').addEventListener('click', async function() {
+  const key = document.getElementById('ai-api-key').value.trim();
+  if (!key) { addAlert('warning','AI: Enter API key first'); return; }
+  this.textContent = '…'; this.disabled = true;
+  setAIStatus('analyzing');
+  try {
+    const r = await fetch('/api/health', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ apiKey: key })
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Auth failed');
+    aiState.apiKey    = key;
+    aiState.connected = true;
+    setAIStatus('connected');
+    const scanBtn = document.getElementById('btn-ai-scan');
+    scanBtn.disabled = false;
+    scanBtn.style.opacity = '1';
+    addAlert('success','🤖 AI Vision Engine connected & ready');
+  } catch(e) {
+    setAIStatus('error');
+    addAlert('critical','🤖 ' + e.message);
+  } finally { this.textContent = 'Connect'; this.disabled = false; }
+});
+
+/* ── Auto-scan toggle ── */
+document.getElementById('toggle-ai-auto').addEventListener('change', function() {
+  aiState.autoScan = this.checked;
+  if (this.checked) {
+    if (!aiState.apiKey) { this.checked=false; addAlert('warning','AI: Connect key first'); return; }
+    aiState.intervalId = setInterval(()=>{ if(!aiState.analyzing) runAIAnalysis(); }, aiState.intervalSecs*1000);
+    addAlert('info','🤖 Auto-scan ON — every '+aiState.intervalSecs+'s');
+  } else {
+    clearInterval(aiState.intervalId);
+    addAlert('info','🤖 Auto-scan OFF');
+  }
+});
+
+/* ── Interval slider ── */
+document.getElementById('ai-interval').addEventListener('input', function() {
+  aiState.intervalSecs = +this.value;
+  document.getElementById('ai-interval-val').textContent = this.value+'s';
+  if (aiState.autoScan) {
+    clearInterval(aiState.intervalId);
+    aiState.intervalId = setInterval(()=>{ if(!aiState.analyzing) runAIAnalysis(); }, aiState.intervalSecs*1000);
+  }
+});
+
+/* ── Analyze buttons ── */
+document.getElementById('btn-ai-scan').addEventListener('click', ()=>{ if(!aiState.analyzing) runAIAnalysis(); });
+
+document.getElementById('btn-start-camera').addEventListener('click', ()=>{
+  setTimeout(()=>{
+    const b = document.getElementById('btn-ai-cam-analyze');
+    if (b) b.style.display = state.cameraActive ? 'inline-block' : 'none';
+  }, 400);
+});
+document.getElementById('btn-ai-cam-analyze').addEventListener('click', ()=>{ if(!aiState.analyzing) runAIAnalysis(); });
+
+/* ── Core analysis ── */
+async function runAIAnalysis() {
+  if (!aiState.apiKey)     { addAlert('warning','🤖 Connect API key first'); return; }
+  const frame = captureVideoFrame();
+  if (!frame)              { addAlert('warning','🤖 Start camera first — point it at a surface'); return; }
+
+  aiState.analyzing = true;
+  setAIStatus('analyzing');
+  const scanBtn = document.getElementById('btn-ai-scan');
+  const camBtn  = document.getElementById('btn-ai-cam-analyze');
+  scanBtn.textContent='⏳ Scanning…'; scanBtn.disabled=true;
+  if (camBtn) { camBtn.textContent='⏳'; camBtn.disabled=true; }
+
+  const activeTab = document.querySelector('.mode-tab.active');
+  const mode      = activeTab ? activeTab.dataset.tab : 'inspection';
+  const tpl       = AI_PROMPTS[mode] || AI_PROMPTS.inspection;
+  const prompt    = tpl
+    .replace('{alt}', state.altitude.toFixed(1))
+    .replace('{spd}', state.speed.toFixed(1))
+    .replace('{lat}', state.gpsLat.toFixed(4))
+    .replace('{lon}', state.gpsLon.toFixed(4))
+    .replace('{bat}', state.battery.toFixed(0));
+  const model = document.getElementById('ai-model').value || 'claude-opus-4-6';
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ apiKey:aiState.apiKey, image:frame, prompt, model })
+    });
+    if (!res.ok) { const e=await res.json(); throw new Error(e.error||'Server error'); }
+    const data = await res.json();
+
+    let parsed = data.parsed;
+    if (!parsed) {
+      try { parsed = JSON.parse(data.result.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim()); }
+      catch { parsed = { summary: data.result.slice(0,150) }; }
+    }
+
+    aiState.scanCount++;
+    aiState.lastScanTime = new Date();
+    document.getElementById('ai-scan-time').textContent =
+      '⏱ ' + aiState.lastScanTime.toLocaleTimeString('en-GB') + '  ·  Scan #' + aiState.scanCount;
+
+    renderAIInsights(parsed, mode);
+    addAlert('success','🤖 '+(parsed.summary||'Analysis complete'));
+
+  } catch(e) {
+    addAlert('critical','🤖 Error: '+e.message);
+    setAIStatus('error');
+  } finally {
+    aiState.analyzing = false;
+    setAIStatus(aiState.connected?'connected':'offline');
+    scanBtn.textContent='🔍 Analyze Frame'; scanBtn.disabled=false;
+    if (camBtn) { camBtn.textContent='🤖 AI'; camBtn.disabled=false; }
+  }
+}
+
+/* ── Route results to renderer ── */
+function renderAIInsights(data, mode) {
+  const c = document.getElementById('ai-insights-content');
+  if      (mode==='waste')       renderWasteAI(data, c);
+  else if (mode==='crowd')       renderCrowdAI(data, c);
+  else if (mode==='inspection')  { renderStructuralAI(data, c); renderInspectionTab(data); }
+  else if (mode==='advertising') renderAdsAI(data, c);
+  else if (mode==='alerts')      renderAlertsAI(data, c);
+  else c.innerHTML=`<pre style="font-size:.6rem;color:var(--text-secondary);white-space:pre-wrap;">${JSON.stringify(data,null,2)}</pre>`;
+}
+
+/* ── STRUCTURAL: right panel ── */
+function renderStructuralAI(data, c) {
+  const cracks  = data.cracks  || [];
+  const defects = data.defects || [];
+  const cond    = data.overallCondition || 'unknown';
+  const integ   = data.structuralIntegrity ?? 75;
+  const col     = cond2col(cond);
+  c.innerHTML = `
+    <div class="ai-condition-row">
+      <span class="control-label">Condition</span>
+      <span style="font-family:'Orbitron',monospace;font-size:.78rem;font-weight:700;color:${col};">${cond.toUpperCase()}</span>
+    </div>
+    <div class="ai-bar-wrap"><div class="ai-bar" style="width:${integ}%;background:${col};"></div></div>
+    <div class="ai-condition-row" style="margin-bottom:6px;">
+      <span class="control-label">Integrity</span>
+      <span style="font-family:'Orbitron',monospace;font-size:.72rem;color:${col};">${integ}%</span>
+    </div>
+    ${data.immediateAction?'<div class="ai-alert-banner">⚠ IMMEDIATE ACTION REQUIRED</div>':''}
+    <div class="ai-section-label">Cracks (${cracks.length})</div>
+    ${cracks.length ? cracks.map(cr=>`
+      <div class="ai-crack-item" style="border-left-color:${sev2col(cr.severity)};">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:600;font-size:.71rem;">${(cr.type||'crack').replace(/_/g,' ').toUpperCase()}</span>
+          <span class="ai-sev-badge" style="background:${sev2col(cr.severity)}20;color:${sev2col(cr.severity)};border:1px solid ${sev2col(cr.severity)}40;">SEV ${cr.severity}/5</span>
+        </div>
+        <div style="font-size:.6rem;color:var(--text-muted);margin:2px 0;">${cr.location||''}</div>
+        <div class="ai-bar-wrap"><div class="ai-bar" style="width:${(cr.severity/5)*100}%;background:${sev2col(cr.severity)};"></div></div>
+        <div style="font-size:.6rem;color:${sev2col(cr.severity)};">${(cr.urgency||'').replace(/_/g,' ').toUpperCase()}</div>
+      </div>`).join('') : '<div style="font-size:.72rem;color:var(--accent-cyan);padding:4px 0;">✅ No cracks detected</div>'}
+    ${defects.length?`<div class="ai-section-label">Defects (${defects.length})</div>${defects.map(d=>`
+      <div class="ai-crack-item" style="border-left-color:${sev2col(d.severity||2)};">
+        <div style="font-weight:600;font-size:.7rem;">${(d.type||'defect').replace(/_/g,' ').toUpperCase()}</div>
+        <div style="font-size:.6rem;color:var(--text-muted);">${d.location||''} · ${d.area||''}</div>
+      </div>`).join('')}`:''}
+    ${data.recommendations?.length?`<div class="ai-section-label">Actions</div>${data.recommendations.map(r=>`<div class="ai-rec-item">→ ${r}</div>`).join('')}`:''}
+    <div class="ai-next-insp">🔁 Re-inspect in ${data.nextInspectionDays||'?'} days</div>`;
+}
+
+/* ── STRUCTURAL: inspection tab ── */
+function renderInspectionTab(data) {
+  const el     = document.getElementById('inspection-ai-content');
+  const cracks = data.cracks  || [];
+  const cond   = data.overallCondition || 'unknown';
+  const integ  = data.structuralIntegrity ?? 75;
+  const col    = cond2col(cond);
+  const maxSev = cracks.length ? Math.max(...cracks.map(c=>c.severity||1)) : 0;
+  el.innerHTML = `
+    <div style="background:${col}12;border:1px solid ${col}35;border-radius:var(--radius-md);padding:var(--gap-md);margin-bottom:var(--gap-md);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-family:'Orbitron',monospace;font-weight:700;font-size:.85rem;color:${col};">${cond.toUpperCase()}</span>
+        <span style="font-size:.6rem;color:var(--text-muted);">${new Date().toLocaleTimeString('en-GB')}</span>
+      </div>
+      <div style="font-size:.73rem;color:var(--text-secondary);">${data.summary||'Analysis complete'}</div>
+      ${data.immediateAction?'<div style="margin-top:8px;padding:6px;background:rgba(239,68,68,.12);border-radius:6px;color:var(--accent-red);font-size:.7rem;font-weight:600;">⚠ IMMEDIATE ACTION REQUIRED</div>':''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap-sm);margin-bottom:var(--gap-md);">
+      <div class="bin-card" style="padding:var(--gap-md);">
+        <div style="font-size:1.3rem;">🔴</div>
+        <div style="font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;color:${cracks.length?sev2col(maxSev):'var(--accent-cyan)'};">${cracks.length}</div>
+        <div style="font-size:.6rem;color:var(--text-muted);">Cracks</div>
+      </div>
+      <div class="bin-card" style="padding:var(--gap-md);">
+        <div style="font-size:1.3rem;">🏗️</div>
+        <div style="font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;color:${col};">${integ}%</div>
+        <div style="font-size:.6rem;color:var(--text-muted);">Integrity</div>
+      </div>
+      <div class="bin-card" style="padding:var(--gap-md);">
+        <div style="font-size:1.3rem;">📅</div>
+        <div style="font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;color:var(--accent-purple);">${data.nextInspectionDays||'?'}</div>
+        <div style="font-size:.6rem;color:var(--text-muted);">Days next</div>
+      </div>
+    </div>
+    ${cracks.length ? `
+      <div class="section-title" style="font-size:.65rem;"><span class="icon">🔴</span> DETECTED CRACKS</div>
+      ${cracks.map(cr=>`
+        <div style="background:rgba(255,255,255,.025);border-radius:var(--radius-sm);border-left:3px solid ${sev2col(cr.severity)};padding:10px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+            <strong style="font-size:.77rem;color:${sev2col(cr.severity)};">${(cr.type||'crack').replace(/_/g,' ').toUpperCase()}</strong>
+            <span style="font-size:.67rem;font-family:'Orbitron',monospace;color:${sev2col(cr.severity)};">SEV ${cr.severity}/5</span>
+          </div>
+          <div style="font-size:.7rem;color:var(--text-secondary);margin-bottom:3px;">${cr.location||''}</div>
+          ${cr.estimatedLengthCm?`<div style="font-size:.62rem;color:var(--text-muted);">~${cr.estimatedLengthCm}cm · ${cr.estimatedWidthMm||'?'}mm wide · <span style="color:${sev2col(cr.severity)};">${(cr.urgency||'').replace(/_/g,' ')}</span></div>`:''}
+          <div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:6px;overflow:hidden;">
+            <div style="height:100%;width:${(cr.severity/5)*100}%;background:${sev2col(cr.severity)};transition:width 1s;"></div>
+          </div>
+        </div>`).join('')}` :
+    `<div style="text-align:center;padding:var(--gap-xl);">
+        <div style="font-size:2.5rem;">✅</div>
+        <div style="font-size:.78rem;color:var(--accent-cyan);margin-top:8px;font-family:'Orbitron',monospace;">NO CRACKS DETECTED</div>
+      </div>`}
+    ${data.defects?.length?`
+      <div class="section-title" style="font-size:.65rem;margin-top:var(--gap-md);"><span class="icon">⚠️</span> OTHER DEFECTS</div>
+      ${data.defects.map(d=>`
+        <div style="background:rgba(255,255,255,.02);border-radius:var(--radius-sm);border-left:3px solid ${sev2col(d.severity||2)};padding:8px;margin-bottom:6px;">
+          <div style="font-weight:600;font-size:.73rem;color:${sev2col(d.severity||2)};">${(d.type||'defect').replace(/_/g,' ').toUpperCase()}</div>
+          <div style="font-size:.65rem;color:var(--text-muted);">${d.location||''} · ${d.area||''}</div>
+        </div>`).join('')}`:''}
+    ${data.recommendations?.length?`
+      <div class="section-title" style="font-size:.65rem;margin-top:var(--gap-md);"><span class="icon">📋</span> RECOMMENDATIONS</div>
+      ${data.recommendations.map(r=>`<div class="ai-rec-item">→ ${r}</div>`).join('')}`:''}`;
+}
+
+/* ── WASTE ── */
+function renderWasteAI(data, c) {
+  const sc={'ok':'var(--accent-cyan)','attention':'var(--accent-orange)','critical':'var(--accent-red)'};
+  const col = sc[data.overallStatus]||'var(--text-muted)';
+  c.innerHTML = `
+    <div class="ai-condition-row" style="margin-bottom:6px;">
+      <span class="control-label">Fleet Status</span>
+      <span style="font-family:'Orbitron',monospace;font-size:.78rem;color:${col};">${(data.overallStatus||'ok').toUpperCase()}</span>
+    </div>
+    ${(data.bins||[]).map(b=>{
+      const fc=b.fillLevel>80?'var(--accent-red)':b.fillLevel>50?'var(--accent-orange)':'var(--accent-cyan)';
+      const cls=b.fillLevel>80?'high':b.fillLevel>50?'medium':'low';
+      return `<div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:.7rem;margin-bottom:2px;">
+          <span>${b.id||'Bin'} <span style="font-size:.58rem;color:var(--text-muted);">${b.location||''}</span></span>
+          <span style="color:${fc};font-family:'Orbitron',monospace;">${b.fillLevel}% · ${b.status||''}</span>
+        </div>
+        <div class="bin-fill-bar"><div class="bin-fill-level ${cls}" style="width:${b.fillLevel}%;"></div></div>
+      </div>`;
+    }).join('')}
+    ${data.illegalDumping?.length?`<div class="ai-section-label">⚠ Dumping</div>${data.illegalDumping.map(d=>`<div class="ai-rec-item" style="color:var(--accent-red);">→ ${d.location} [${d.severity}]</div>`).join('')}`:''}
+    ${data.summary?`<div style="font-size:.68rem;color:var(--text-secondary);padding:6px 0;border-top:1px solid var(--glass-border);margin-top:4px;">${data.summary}</div>`:''}`;
+  // sync detected fill levels back to sim bins
+  (data.bins||[]).forEach(b=>{ const m=bins.find(wb=>wb.id===b.id); if(m) m.fill=b.fillLevel; });
+  renderBins();
+}
+
+/* ── CROWD ── */
+function renderCrowdAI(data, c) {
+  const dc={'none':'var(--text-muted)','low':'var(--accent-cyan)','medium':'var(--accent-blue)','high':'var(--accent-orange)','critical':'var(--accent-red)'};
+  const tc={'clear':'var(--accent-cyan)','slow':'var(--accent-orange)','congested':'var(--accent-red)','gridlock':'#ff0000'};
+  c.innerHTML = `
+    <div class="ai-condition-row"><span class="control-label">Density</span><span style="font-family:'Orbitron',monospace;font-size:.76rem;color:${dc[data.crowdDensity]||'var(--text-muted)'};">${(data.crowdDensity||'N/A').toUpperCase()}</span></div>
+    <div class="ai-condition-row"><span class="control-label">People Est.</span><span style="font-family:'Orbitron',monospace;font-size:.76rem;color:var(--accent-cyan);">${data.estimatedPeople??'?'}</span></div>
+    <div class="ai-condition-row"><span class="control-label">Vehicles</span><span style="font-family:'Orbitron',monospace;font-size:.76rem;color:var(--accent-purple);">${data.vehicles?.total??'?'}</span></div>
+    <div class="ai-condition-row"><span class="control-label">Traffic</span><span style="font-family:'Orbitron',monospace;font-size:.76rem;color:${tc[data.vehicles?.congestion]||'var(--text-muted)'};">${(data.vehicles?.congestion||'N/A').toUpperCase()}</span></div>
+    ${data.safetyAlerts?.length?`<div class="ai-section-label">Safety Alerts</div>${data.safetyAlerts.map(a=>`<div class="ai-rec-item" style="color:${a.severity==='critical'?'var(--accent-red)':'var(--accent-orange)'};">⚠ ${a.type} — ${a.location}</div>`).join('')}`:''}
+    ${data.summary?`<div style="font-size:.68rem;color:var(--text-secondary);padding:6px 0;border-top:1px solid var(--glass-border);margin-top:4px;">${data.summary}</div>`:''}`;
+}
+
+/* ── ADVERTISING ── */
+function renderAdsAI(data, c) {
+  const cmap={cyan:'#06d6a0',purple:'#8b5cf6',orange:'#f59e0b',blue:'#3b82f6',pink:'#ec4899',white:'#ffffff'};
+  const dc = cmap[data.displayColor]||'#06d6a0';
+  c.innerHTML = `
+    <div class="ai-condition-row"><span class="control-label">Audience</span><span style="font-size:.72rem;color:var(--accent-cyan);">${data.audienceSize||'?'}</span></div>
+    <div class="ai-condition-row"><span class="control-label">Context</span><span style="font-size:.7rem;color:var(--text-secondary);">${(data.context||'?').replace(/_/g,' ')}</span></div>
+    <div class="ai-condition-row"><span class="control-label">Engagement</span><span style="font-size:.7rem;color:var(--accent-purple);">${data.audienceEngagement||'?'}</span></div>
+    ${data.bestAdContent?.length?`<div class="ai-section-label">Suggested Messages</div>
+      ${data.bestAdContent.map((m,i)=>`<div class="ai-rec-item" style="cursor:pointer;color:var(--accent-cyan);" onclick="applyLEDMsg(\`${m.replace(/`/g,'\\`')}\`)">${i+1}. ${m} <span style="font-size:.58rem;color:var(--text-muted);">(tap)</span></div>`).join('')}`:''}
+    <div style="margin-top:8px;padding:6px;border-radius:6px;border:1px solid ${dc}45;background:${dc}15;text-align:center;font-size:.68rem;color:${dc};">LED Color: ${(data.displayColor||'cyan').toUpperCase()}</div>
+    ${data.summary?`<div style="font-size:.68rem;color:var(--text-secondary);padding:6px 0;border-top:1px solid var(--glass-border);margin-top:6px;">${data.summary}</div>`:''}`;
+  if (cmap[data.displayColor]) {
+    document.getElementById('led-preview').style.color       = dc;
+    document.getElementById('led-preview').style.textShadow = `0 0 10px ${dc}`;
+  }
+}
+
+/* ── ALERTS / SAFETY ── */
+function renderAlertsAI(data, c) {
+  const rc={'low':'var(--accent-cyan)','medium':'var(--accent-orange)','high':'var(--accent-red)','critical':'#ff0000'};
+  const col = rc[data.riskLevel]||'var(--text-muted)';
+  c.innerHTML = `
+    <div class="ai-condition-row" style="margin-bottom:6px;"><span class="control-label">Risk Level</span><span style="font-family:'Orbitron',monospace;font-size:.78rem;color:${col};">${(data.riskLevel||'N/A').toUpperCase()}</span></div>
+    ${(data.alerts||[]).map(a=>`
+      <div style="background:${rc[a.severity]||'var(--text-muted)'}15;border-left:3px solid ${rc[a.severity]||'var(--text-muted)'};border-radius:var(--radius-sm);padding:8px;margin-bottom:6px;">
+        <div style="font-weight:600;font-size:.72rem;color:${rc[a.severity]||'var(--text-muted)'};">${(a.type||'ALERT').toUpperCase()}</div>
+        <div style="font-size:.63rem;color:var(--text-muted);">${a.location||''}</div>
+        <div style="font-size:.67rem;color:var(--text-secondary);">${a.description||''}</div>
+      </div>`).join('')}
+    ${data.recommendations?.length?`<div class="ai-section-label">Actions</div>${data.recommendations.map(r=>`<div class="ai-rec-item">→ ${r}</div>`).join('')}`:''}
+    ${data.summary?`<div style="font-size:.68rem;color:var(--text-secondary);padding:6px 0;border-top:1px solid var(--glass-border);margin-top:4px;">${data.summary}</div>`:''}`;
+  (data.alerts||[]).forEach(a=>{
+    const sev={'low':'info','medium':'warning','high':'critical','critical':'critical'}[a.severity]||'info';
+    addAlert(sev,'🤖 '+a.type+' — '+(a.description||'').slice(0,60));
+  });
+}
+
+/* ── Apply ad message to LED ── */
+function applyLEDMsg(msg) {
+  document.getElementById('led-message').value = msg;
+  document.getElementById('led-preview-text').textContent = msg;
+  state.ledMessage = msg;
+  addAlert('info','📺 LED: '+msg.slice(0,45));
+}
+
+console.log('🛸 O.U.R.A.N.O.S Dashboard loaded — AI Vision active');
+  </script>
+</body>
+</html>
